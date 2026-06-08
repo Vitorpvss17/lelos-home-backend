@@ -1,0 +1,10 @@
+# Normaliza finais de linha. Mantém LF no repositório para arquivos de texto.
+* text=auto
+
+# Scripts que rodam em Linux/Docker precisam de LF (senão "bad interpreter").
+mvnw text eol=lf
+*.sh text eol=lf
+
+# Scripts Windows mantêm CRLF.
+*.cmd text eol=crlf
+*.bat text eol=crlf

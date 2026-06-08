@@ -1,0 +1,48 @@
+# Os valores sensíveis são lidos do arquivo .env (não versionado).
+# Copie .env.example para .env e ajuste antes de subir: `docker compose up`.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: lelos-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-lelos_home}
+      POSTGRES_USER: ${POSTGRES_USER:-lelos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lelos} -d ${POSTGRES_DB:-lelos_home}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: lelos-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-lelos_home}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-lelos}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no .env}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>=32 chars) no .env}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-28800000}
+      WHATSAPP_NUMBER: ${WHATSAPP_NUMBER:?defina WHATSAPP_NUMBER no .env}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?defina ADMIN_EMAIL no .env}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?defina ADMIN_PASSWORD no .env}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  pg_data:

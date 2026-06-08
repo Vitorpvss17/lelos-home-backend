@@ -1,0 +1,14 @@
+target/
+.git/
+.idea/
+*.iml
+*.log
+app-run.log
+test-run.log
+.mvn/wrapper/maven-wrapper.jar
+HELP.md
+
+# Segredos locais — nunca incluir na imagem
+.env
+.env.*
+!.env.example
