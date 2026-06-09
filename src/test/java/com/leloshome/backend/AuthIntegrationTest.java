@@ -92,4 +92,33 @@ class AuthIntegrationTest extends AbstractIntegrationTest {
         assertThat(get("/api/admin/categories", "abc.def.ghi").getStatusCode())
                 .isEqualTo(HttpStatus.UNAUTHORIZED);
     }
+
+    @Test
+    void logout_revogaTokensNoServidor() {
+        JsonNode tokens = post("/api/admin/auth/login",
+                new LoginRequest(adminEmail, adminPassword), null).getBody();
+        String access = tokens.get("accessToken").asText();
+        String refresh = tokens.get("refreshToken").asText();
+
+        // token funciona antes do logout
+        assertThat(get("/api/admin/categories", access).getStatusCode()).isEqualTo(HttpStatus.OK);
+
+        // logout (autenticado) → 204
+        assertThat(post("/api/admin/auth/logout", null, access).getStatusCode())
+                .isEqualTo(HttpStatus.NO_CONTENT);
+
+        // o MESMO access token agora é rejeitado (revogado no servidor)
+        assertThat(get("/api/admin/categories", access).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+
+        // e o refresh token também não renova mais
+        assertThat(post("/api/admin/auth/refresh", Map.of("refreshToken", refresh), null).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
+
+    @Test
+    void logout_semToken_retorna401() {
+        assertThat(post("/api/admin/auth/logout", null, null).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+    }
 }

@@ -78,8 +78,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/kits/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/orders/**").permitAll()
-                // Admin auth
+                // Logout precisa de token válido (revoga a sessão no servidor)
+                .requestMatchers(HttpMethod.POST, "/api/admin/auth/logout").authenticated()
+                // Demais rotas de auth (login/refresh) são públicas
                 .requestMatchers("/api/admin/auth/**").permitAll()
                 // Everything else requires auth
                 .anyRequest().authenticated()

@@ -49,7 +49,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
-                if (jwtService.isValid(token, userDetails.getUsername())) {
+                Integer tokenVersion = jwtService.extractTokenVersion(token);
+                int currentVersion = (userDetails instanceof AdminUserDetails a) ? a.getTokenVersion() : 0;
+
+                if (jwtService.isValid(token, userDetails.getUsername())
+                        && tokenVersion != null
+                        && tokenVersion == currentVersion) {
                     UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
                     auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

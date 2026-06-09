@@ -11,8 +11,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.UUID;
-
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -27,9 +25,7 @@ public class OrderController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
 
-    @GetMapping("/{id}")
-    @Operation(summary = "Consulta pedido por ID")
-    public ResponseEntity<OrderResponse> findById(@PathVariable UUID id) {
-        return ResponseEntity.ok(service.findById(id));
-    }
+    // A consulta de pedido por ID foi movida para o admin autenticado
+    // (GET /api/admin/orders/{id}). O endpoint público expunha PII
+    // (nome, telefone, itens) a qualquer um que tivesse o UUID.
 }

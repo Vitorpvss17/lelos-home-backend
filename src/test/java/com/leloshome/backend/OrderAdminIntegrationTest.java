@@ -100,4 +100,15 @@ class OrderAdminIntegrationTest extends AbstractIntegrationTest {
                 new OrderStatusUpdateRequest(OrderStatus.CANCELLED), adminToken());
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
+
+    @Test
+    void detalheDePedido_naoEhMaisPublico() {
+        String orderId = criarPedido(novoProduto());
+        // público (sem token) → bloqueado: não expõe mais PII por UUID
+        assertThat(get("/api/orders/" + orderId, null).getStatusCode())
+                .isEqualTo(HttpStatus.UNAUTHORIZED);
+        // admin (autenticado) → detalhe disponível
+        assertThat(get("/api/admin/orders/" + orderId, adminToken()).getStatusCode())
+                .isEqualTo(HttpStatus.OK);
+    }
 }

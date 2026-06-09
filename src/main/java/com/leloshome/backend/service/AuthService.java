@@ -1,5 +1,6 @@
 package com.leloshome.backend.service;
 
+import com.leloshome.backend.domain.AdminUser;
 import com.leloshome.backend.dto.request.LoginRequest;
 import com.leloshome.backend.dto.request.RefreshRequest;
 import com.leloshome.backend.dto.response.LoginResponse;
@@ -13,6 +14,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +31,9 @@ public class AuthService {
         } catch (AuthenticationException ex) {
             throw new BadCredentialsException("E-mail ou senha inválidos");
         }
-        return buildTokens(req.email());
+        AdminUser user = adminUserRepository.findByEmail(req.email())
+                .orElseThrow(() -> new BadCredentialsException("E-mail ou senha inválidos"));
+        return buildTokens(user);
     }
 
     public LoginResponse refresh(RefreshRequest req) {
@@ -46,17 +50,32 @@ public class AuthService {
             throw new BadCredentialsException("Refresh token inválido ou expirado");
         }
 
-        if (adminUserRepository.findByEmail(email).isEmpty()) {
-            throw new BusinessException("Usuário não existe mais");
+        AdminUser user = adminUserRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException("Usuário não existe mais"));
+
+        // Sessão revogada (logout/troca de senha): a versão do token não bate mais.
+        Integer tokenVersion = jwtService.extractTokenVersion(token);
+        if (tokenVersion == null || tokenVersion != user.getTokenVersion()) {
+            throw new BadCredentialsException("Sessão revogada. Faça login novamente.");
         }
 
-        return buildTokens(email);
+        return buildTokens(user);
     }
 
-    private LoginResponse buildTokens(String email) {
+    /** Revoga (no servidor) todos os tokens do admin incrementando o tokenVersion. */
+    @Transactional
+    public void logout(String email) {
+        adminUserRepository.findByEmail(email).ifPresent(user -> {
+            user.setTokenVersion(user.getTokenVersion() + 1);
+            adminUserRepository.save(user);
+        });
+    }
+
+    private LoginResponse buildTokens(AdminUser user) {
+        int version = user.getTokenVersion();
         return new LoginResponse(
-                jwtService.generateAccessToken(email),
-                jwtService.generateRefreshToken(email),
+                jwtService.generateAccessToken(user.getEmail(), version),
+                jwtService.generateRefreshToken(user.getEmail(), version),
                 jwtService.getAccessExpirationMs()
         );
     }

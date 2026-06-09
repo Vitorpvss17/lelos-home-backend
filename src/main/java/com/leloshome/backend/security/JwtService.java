@@ -15,6 +15,7 @@ import java.util.function.Function;
 public class JwtService {
 
     private static final String TOKEN_TYPE_CLAIM = "type";
+    private static final String TOKEN_VERSION_CLAIM = "ver";
     private static final String ACCESS_TYPE = "access";
     private static final String REFRESH_TYPE = "refresh";
 
@@ -32,12 +33,12 @@ public class JwtService {
         this.refreshExpirationMs = refreshExpirationMs;
     }
 
-    public String generateAccessToken(String email) {
-        return buildToken(email, ACCESS_TYPE, expirationMs);
+    public String generateAccessToken(String email, int tokenVersion) {
+        return buildToken(email, ACCESS_TYPE, tokenVersion, expirationMs);
     }
 
-    public String generateRefreshToken(String email) {
-        return buildToken(email, REFRESH_TYPE, refreshExpirationMs);
+    public String generateRefreshToken(String email, int tokenVersion) {
+        return buildToken(email, REFRESH_TYPE, tokenVersion, refreshExpirationMs);
     }
 
     public long getAccessExpirationMs() {
@@ -46,6 +47,10 @@ public class JwtService {
 
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    public Integer extractTokenVersion(String token) {
+        return extractClaim(token, c -> c.get(TOKEN_VERSION_CLAIM, Integer.class));
     }
 
     public boolean isAccessToken(String token) {
@@ -60,11 +65,12 @@ public class JwtService {
         return email.equals(extractEmail(token)) && !isExpired(token);
     }
 
-    private String buildToken(String email, String type, long ttlMs) {
+    private String buildToken(String email, String type, int tokenVersion, long ttlMs) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(email)
                 .claim(TOKEN_TYPE_CLAIM, type)
+                .claim(TOKEN_VERSION_CLAIM, tokenVersion)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + ttlMs))
                 .signWith(key)

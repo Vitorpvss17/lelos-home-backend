@@ -25,6 +25,11 @@ public class AdminUser {
     @Column(length = 100)
     private String name;
 
+    /** Incrementado no logout para invalidar todos os tokens deste admin. */
+    @Column(name = "token_version", nullable = false)
+    @Builder.Default
+    private Integer tokenVersion = 0;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
