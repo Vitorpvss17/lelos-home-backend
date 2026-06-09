@@ -1,6 +1,13 @@
 spring:
   datasource:
-    url: ${DATABASE_URL}
+    # Railway: o DATABASE_URL vem como postgresql://... e o Spring precisa de jdbc:postgresql://...
+    # Defina estas 3 variáveis no serviço do back referenciando o Postgres:
+    #   SPRING_DATASOURCE_URL=jdbc:postgresql://${{Postgres.PGHOST}}:${{Postgres.PGPORT}}/${{Postgres.PGDATABASE}}
+    #   SPRING_DATASOURCE_USERNAME=${{Postgres.PGUSER}}
+    #   SPRING_DATASOURCE_PASSWORD=${{Postgres.PGPASSWORD}}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     show-sql: false
   flyway:
